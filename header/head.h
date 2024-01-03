@@ -10,7 +10,6 @@ extern clock_t lastMoveTime; // Déclaration de lastMoveTime en tant que variabl
 void moveBall(Ball *ball);
 
 void updateGameState(char gameBoard[ROWS][COLS], Snopy *snoopy, Ball *ball, Obstacle *obstacle, Oiseau oiseaux[NUM_OISEAUX],double elapsedTime);
-
 void moveSnopy(Snopy *snoopy, char direction, char gameBoard[ROWS][COLS], Obstacle obstacle);
 void displayGameBoard(char gameBoard[ROWS][COLS], double elapsedTime);
 void placeElementOnBoard(char gameBoard[ROWS][COLS], Position pos, char symbol);
@@ -20,5 +19,9 @@ void initializeGameBoard(char gameBoard[ROWS][COLS]);
 void showCursor();
 
 void hideCursor();
-void playGame(char gameBoard[ROWS][COLS],int x) ;
+void playGame(char gameBoard[ROWS][COLS],int maxGameTime) ;
 int isPositionValid(char gameBoard[ROWS][COLS], Position pos, Obstacle obstacle);
+void saveGame(char gameBoard[ROWS][COLS]);
+void loadGame(char gameBoard[ROWS][COLS]);
+void Menu();
+void displayRules();

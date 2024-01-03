@@ -53,9 +53,9 @@ void displayGameBoard(char gameBoard[ROWS][COLS], double elapsedTime) {
     hideCursor();
     COORD cursorPos;  // Structure pour stocker la position du curseur
     cursorPos.X = 0;
-    cursorPos.Y = 0;
+    cursorPos.Y = 1;
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), cursorPos);
-    printf("|------------------------------------------------------------------------------|\n");
+    printf("|-------------------------------------------------------------------------------|\n");
     for (int i = 0; i < ROWS; i++) {
         for (int j = 0; j < COLS; j++) {
             printf("| %c ", gameBoard[i][j]);
@@ -67,7 +67,7 @@ void displayGameBoard(char gameBoard[ROWS][COLS], double elapsedTime) {
         }
         printf("\n");
     }
-    printf("|------------------------------------------------------------------------------|\n");
+    printf("|-------------------------------------------------------------------------------|\n");
     // showCursor();
 }
 
@@ -147,7 +147,7 @@ void updateGameState(char gameBoard[ROWS][COLS], Snopy *snoopy, Ball *ball, Obst
     if (snoopy->pos.x == ball->pos.x && snoopy->pos.y == ball->pos.y) {
         placeElementOnBoard(gameBoard, ball->pos, ball->symbol);
         displayGameBoard(gameBoard,elapsedTime);
-        printf("Snoopy a touché la balle! Le jeu est terminé.\n");
+        printf("\nSnoopy a touché la balle! Le jeu est terminé.\n");
         exit(0); // ou utilisez un autre moyen pour quitter le jeu
     }
     // Afficher les nouvelles positions
@@ -163,8 +163,33 @@ void updateGameState(char gameBoard[ROWS][COLS], Snopy *snoopy, Ball *ball, Obst
     
 }
 
+void saveGame(char gameBoard[ROWS][COLS]) {
+    FILE *file = fopen("saved_game.bin", "wb");
+
+    if (file != NULL) {
+        fwrite(gameBoard, sizeof(char), ROWS * COLS, file);
+        fclose(file);
+        printf("La partie a été sauvegardée avec succès.\n");
+    } else {
+        printf("Erreur lors de l'ouverture du fichier pour sauvegarde.\n");
+    }
+}
+
+void loadGame(char gameBoard[ROWS][COLS]) {
+    FILE *file = fopen("saved_game.bin", "rb");
+
+    if (file != NULL) {
+        fread(gameBoard, sizeof(char), ROWS * COLS, file);
+        fclose(file);
+        printf("La partie a été chargée avec succès.\n");
+    } else {
+        printf("Erreur lors de l'ouverture du fichier pour chargement.\n");
+    }
+}
+
 void playGame(char gameBoard[ROWS][COLS],int maxGameTime) {
     int oiseauxCaptured = 0;
+    double score = 0;
     Snopy snoopy = {{1, 1}, 0x2};
     Ball ball = {{3, 3}, 0xB};
     Obstacle obstacle = {{5, 5}, 0xF};
@@ -181,10 +206,9 @@ void playGame(char gameBoard[ROWS][COLS],int maxGameTime) {
         clock_t currentTime = clock();
         double elapsedTime = ((double)(currentTime - startTime)) / CLOCKS_PER_SEC;
         updateGameState(gameBoard, &snoopy, &ball, &obstacle,oiseaux,elapsedTime);
-
+        printf("Déplacez Snoopy (↑ pour haut, ↓ pour bas, ← pour gauche, → pour droite): \n");
         for (int i = 0; i < NUM_OISEAUX; ++i) {
             if (snoopy.pos.x == oiseaux[i].pos.x && snoopy.pos.y == oiseaux[i].pos.y) {
-                printf("Snoopy a récupéré un oiseau!\n");
                 oiseauxCaptured++;
                 oiseaux[i].pos.x = -1;  // Marquer l'oiseau comme capturé
                 oiseaux[i].pos.y = -1;             
@@ -195,7 +219,9 @@ void playGame(char gameBoard[ROWS][COLS],int maxGameTime) {
         if (oiseauxCaptured == NUM_OISEAUX) {
             placeElementOnBoard(gameBoard, snoopy.pos,snoopy.symbol);
             displayGameBoard(gameBoard,elapsedTime);
-            printf("Félicitations, Snoopy a récupéré tous les oiseaux!\n");
+            printf("\n\nFélicitations, Snoopy a récupéré tous les oiseaux!\n");
+            printf("vous aver teriner le jeux en: %.lf seconds\n",elapsedTime);
+            printf("Votre Score est de : %.lf\n",score);
             break;
         }
             if (elapsedTime >= maxGameTime) {
@@ -203,11 +229,17 @@ void playGame(char gameBoard[ROWS][COLS],int maxGameTime) {
                 printf("\nTemps écoulé. Le jeu est terminé.\n");
                 break;
         }
-        printf("Déplacez Snoopy (↑ pour haut, ↓ pour bas, ← pour gauche, → pour droite): ");
+        score = (maxGameTime - elapsedTime) * 100;
         if (kbhit()) {
             char direction = _getch();
             if (direction == 'q' || direction == 'Q') {
                 printf("\nVous avez quitté le jeu.\n");
+                break;
+            }
+            else if (direction == 's' || direction == 'S') {
+                // Sauvegarder la partie
+                saveGame(gameBoard);
+                printf("\nLa partie a été sauvegardée.\n");
                 break;
             }
             placeElementOnBoard(gameBoard, snoopy.pos, ' ');
@@ -217,3 +249,54 @@ void playGame(char gameBoard[ROWS][COLS],int maxGameTime) {
     }
 }
 
+void Menu() {
+    hideCursor();
+    printf("Bienvenue dans le jeu Snoupy!\n");
+    printf("1. Règles du jeu\n");
+    printf("2. Lancer niveau\n");
+    printf("3. Charger une partie\n");
+    printf("4. Quitter\n");
+}
+void displayRules() {
+    system("cls");  // Efface l'écran pour afficher les règles
+    printf("=== Règles du Jeu ===\n\n");
+    printf("Objectif :\n");
+    printf("Le but du jeu est de guider Snoopy pour capturer tous les oiseaux avant que le temps ne s'écoule.\n\n");
+
+    printf("Déplacements :\n");
+    printf("Utilisez les touches fléchées pour déplacer Snoopy :\n");
+    printf("↑ : Déplacer vers le haut\n");
+    printf("↓ : Déplacer vers le bas\n");
+    printf("← : Déplacer vers la gauche\n");
+    printf("→ : Déplacer vers la droite\n\n");
+
+    printf("Éléments du Jeu :\n");
+    printf("1. Snoopy :\n");
+    printf("   - Représenté par le symbole 0x2.\n");
+    printf("   - Déplacez Snoopy pour capturer les oiseaux.\n\n");
+
+    printf("2. Oiseaux :\n");
+    printf("   - Représentés par le symbole 0xE.\n");
+    printf("   - Capturez tous les oiseaux pour gagner.\n\n");
+
+    printf("3. Balle :\n");
+    printf("   - Représentée par le symbole 0xB.\n");
+    printf("   - Évitez la balle, une collision met fin au jeu.\n\n");
+
+    printf("4. Obstacle :\n");
+    printf("   - Représenté par le symbole 0xF.\n");
+    printf("   - Évitez l'obstacle en le contournant.\n\n");
+
+    printf("Gestion du Temps :\n");
+    printf("Le jeu a une limite de temps. Capturez tous les oiseaux avant que le temps ne s'écoule.\n\n");
+
+    printf("Fin du Jeu :\n");
+    printf("Le jeu se termine si :\n");
+    printf("- Snoopy capture tous les oiseaux avant la fin du temps (victoire).\n");
+    printf("- Snoopy entre en collision avec la balle (défaite).\n");
+    printf("- Le temps imparti est écoulé (défaite).\n\n");
+
+    printf("Appuyez sur n'importe quelle touche pour retourner au menu...\n");
+    getch();  // Attend une touche pour continuer
+    system("cls");  // Efface l'écran pour revenir au menu
+}
